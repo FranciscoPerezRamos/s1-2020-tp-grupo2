@@ -6,6 +6,7 @@ import ar.edu.unq.pdes.myprivateblog.BaseApplication
 import ar.edu.unq.pdes.myprivateblog.MainActivity
 import ar.edu.unq.pdes.myprivateblog.MainActivityViewModel
 import ar.edu.unq.pdes.myprivateblog.data.AppDatabase
+import ar.edu.unq.pdes.myprivateblog.data.BlogEntriesRemoteRepository
 import ar.edu.unq.pdes.myprivateblog.data.BlogEntriesRepository
 import ar.edu.unq.pdes.myprivateblog.logger.AnalyticsLogger
 import ar.edu.unq.pdes.myprivateblog.screens.post_create.PostCreateFragment
@@ -16,6 +17,8 @@ import ar.edu.unq.pdes.myprivateblog.screens.post_edit.PostEditFragment
 import ar.edu.unq.pdes.myprivateblog.screens.post_edit.PostEditViewModel
 import ar.edu.unq.pdes.myprivateblog.screens.posts_listing.PostsListingFragment
 import ar.edu.unq.pdes.myprivateblog.screens.posts_listing.PostsListingViewModel
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import dagger.*
 import dagger.android.AndroidInjector
 import dagger.android.ContributesAndroidInjector
@@ -30,7 +33,8 @@ import javax.inject.Singleton
         ApplicationModule::class,
         MainActivityModule::class,
         LoggerModule::class
-    ])
+    ]
+)
 interface ApplicationComponent : AndroidInjector<BaseApplication> {
 
     @Component.Factory
@@ -50,8 +54,17 @@ open class ApplicationModule {
 
     @Singleton
     @Provides
-    fun provideBlogEntriesRepository(appDatabase: AppDatabase): BlogEntriesRepository {
-        return BlogEntriesRepository(appDatabase)
+    fun provideBlogEntriesRemoteRepository(): BlogEntriesRemoteRepository {
+        return BlogEntriesRemoteRepository(Firebase.firestore)
+    }
+
+    @Singleton
+    @Provides
+    fun provideBlogEntriesRepository(
+        appDatabase: AppDatabase,
+        remoteRepository: BlogEntriesRemoteRepository
+    ): BlogEntriesRepository {
+        return BlogEntriesRepository(appDatabase, remoteRepository)
     }
 }
 
@@ -65,9 +78,11 @@ open class ApplicationModule {
 )
 abstract class MainActivityModule {
 
-    @ContributesAndroidInjector(modules = [
-        ViewModelBuilder::class
-    ])
+    @ContributesAndroidInjector(
+        modules = [
+            ViewModelBuilder::class
+        ]
+    )
     internal abstract fun mainActivity(): MainActivity
 
     @Binds
@@ -79,9 +94,11 @@ abstract class MainActivityModule {
 @Module
 abstract class PostsListingModule {
 
-    @ContributesAndroidInjector(modules = [
-        ViewModelBuilder::class
-    ])
+    @ContributesAndroidInjector(
+        modules = [
+            ViewModelBuilder::class
+        ]
+    )
     internal abstract fun postsListingFragment(): PostsListingFragment
 
     @Binds
